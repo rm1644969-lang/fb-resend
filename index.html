@@ -517,6 +517,7 @@ service cloud.firestore {
       statSuspended: document.getElementById("statSuspended"),
       statChecks: document.getElementById("statChecks"),
       createForm: document.getElementById("createForm"),
+      createBtn: document.getElementById("createBtn"),
       clientName: document.getElementById("clientName"),
       presetHwid: document.getElementById("presetHwid"),
       durationPreset: document.getElementById("durationPreset"),
@@ -652,7 +653,12 @@ service cloud.firestore {
     function generateRandomKey() {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       const randBytes = new Uint8Array(12);
-      (window.crypto || window.msCrypto).getRandomValues(randBytes);
+      const cryptoApi = window.crypto || window.msCrypto;
+      if (cryptoApi && typeof cryptoApi.getRandomValues === "function") {
+        cryptoApi.getRandomValues(randBytes);
+      } else {
+        for (let i = 0; i < 12; i++) randBytes[i] = Math.floor(Math.random() * 256);
+      }
       let s = "";
       for (let i = 0; i < 12; i++) s += chars[randBytes[i] % chars.length];
       return `FB-${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8, 12)}`;
