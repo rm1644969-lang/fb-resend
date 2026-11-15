@@ -2,22 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auto Tool — Firebase HWID License Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>FAST OTP — License & Telemetry Control Center</title>
+
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0B1120" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FAST OTP Admin" />
+  <link rel="apple-touch-icon" href="developer_avatar_small.png" />
+  <link rel="icon" type="image/x-icon" href="icon.ico" />
+
   <style>
     :root {
-      --bg: #0b0f19;
-      --surface: #131b2e;
-      --surface-2: #0f1626;
-      --border: #23304c;
-      --text: #e2e8f0;
-      --muted: #8b9bb4;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --cyan: #38bdf8;
-      --green: #10b981;
-      --red: #ef4444;
-      --amber: #f59e0b;
+      --bg: #070B14;
+      --surface: #0E1626;
+      --surface-2: #141F36;
+      --border: #1E2D4A;
+      --border-glow: rgba(0, 240, 255, 0.25);
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --cyan: #00F0FF;
+      --green: #10B981;
+      --red: #EF4444;
+      --amber: #F59E0B;
+      --purple: #8B5CF6;
     }
 
     * { box-sizing: border-box; }
@@ -25,35 +38,71 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       line-height: 1.45;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.05) 0%, transparent 40%);
+      background-attachment: fixed;
     }
 
+    /* Top Bar */
     .topbar {
-      background: #0f1523;
+      background: rgba(14, 22, 38, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      padding: 12px 24px;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    .brand {
+    .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 18px;
+      gap: 12px;
+    }
+
+    .brand-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+      object-fit: cover;
+    }
+
+    .brand-info h1 {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: 0.02em;
+      background: linear-gradient(90deg, #FFFFFF, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 1px;
     }
 
     .badge-ver {
       font-size: 11px;
-      background: rgba(16, 185, 129, 0.16);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 2px 9px;
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 2px 8px;
       border-radius: 999px;
       font-weight: 600;
     }
@@ -71,34 +120,70 @@
       gap: 6px;
       font-size: 12px;
       font-weight: 600;
-      padding: 6px 11px;
+      padding: 6px 12px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: var(--surface-2);
       color: var(--muted);
     }
-
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
     .status-pill.ok { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4); }
-    .status-pill.ok .status-dot { background: var(--green); }
+    .status-pill.ok .status-dot { background: var(--green); box-shadow: 0 0 8px #10B981; }
     .status-pill.err { color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
     .status-pill.err .status-dot { background: var(--red); }
 
-    .container { max-width: 1320px; margin: 0 auto; padding: 22px 24px 48px; }
-    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    /* Layout & Cards */
+    .container { max-width: 1400px; margin: 0 auto; padding: 22px 20px 60px; }
+    
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
 
     .card {
-      background: var(--surface);
+      background: rgba(14, 22, 38, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 18px 20px;
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover { border-color: var(--border-glow); }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
     }
 
     .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
-    .stat-val { font-size: 28px; font-weight: 700; margin-top: 6px; }
+    .stat-val { font-size: 28px; font-weight: 800; margin-top: 4px; }
 
-    h2 { font-size: 16px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+    .pulse-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 10px #10B981;
+      animation: pulseAnim 1.8s infinite;
+      margin-right: 4px;
+    }
+    @keyframes pulseAnim {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
 
+    h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #FFFFFF; }
+
+    /* Inputs and Buttons */
     input, select, textarea {
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -108,8 +193,9 @@
       font-size: 13px;
       outline: none;
       width: 100%;
+      transition: border-color 0.15s;
     }
-    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    input:focus, select:focus, textarea:focus { border-color: var(--cyan); }
 
     .btn {
       border: 1px solid transparent;
@@ -123,17 +209,17 @@
       justify-content: center;
       gap: 6px;
       white-space: nowrap;
-      transition: background 0.15s ease, opacity 0.15s ease;
+      transition: all 0.15s ease;
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-ghost { background: var(--surface-2); border-color: var(--border); color: var(--text); }
-    .btn-ghost:hover { border-color: #3b4f7a; }
-    .btn-sm { padding: 5px 9px; font-size: 11px; border-radius: 6px; }
+    .btn-ghost:hover { border-color: var(--cyan); }
+    .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
     .btn-warn { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); color: #fcd34d; }
     .btn-ok { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
-    .btn-info { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.35); color: #7dd3fc; }
+    .btn-info { background: rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.35); color: #7dd3fc; }
     .btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5; }
 
     .form-grid {
@@ -142,7 +228,6 @@
       gap: 12px;
       align-items: end;
     }
-
     .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
 
     .alert {
@@ -161,6 +246,7 @@
     .alert.error { background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca; }
     .alert.info { background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #bae6fd; }
 
+    /* Table & Telemetry Display */
     .toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .toolbar-right { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
@@ -172,10 +258,12 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
-      padding: 10px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--border);
+      background: rgba(14, 22, 38, 0.6);
+      white-space: nowrap;
     }
-    td { padding: 11px 10px; border-bottom: 1px solid rgba(35, 48, 76, 0.6); vertical-align: middle; }
+    td { padding: 11px 12px; border-bottom: 1px solid rgba(30, 45, 74, 0.6); vertical-align: middle; }
     tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
     .mono {
@@ -189,33 +277,75 @@
     }
     .key-text { color: #fbbf24; font-weight: 700; }
     .hwid-text { color: var(--cyan); }
+    .ip-text { color: #A78BFA; font-weight: 600; }
 
-    .tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; display: inline-block; }
-    .tag-active { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
-    .tag-suspended { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
-    .tag-expired { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
-    .tag-unbound { background: rgba(139, 155, 180, 0.18); color: #cbd5e1; }
+    .tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+    .tag-active { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-suspended { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .tag-expired { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-unbound { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
 
-    .actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-    .muted-small { font-size: 12px; color: var(--muted); }
+    .status-online { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700; }
+    .status-recent { background: rgba(56, 189, 248, 0.15); color: #7DD3FC; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .status-offline { background: rgba(100, 116, 139, 0.15); color: #94A3B8; border: 1px solid rgba(100, 116, 139, 0.3); }
+
+    .resend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .uptime-badge {
+      font-size: 11px;
+      color: #38BDF8;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 600;
+    }
+
+    .actions { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+    .muted-small { font-size: 11px; color: var(--muted); }
     .checkbox-lbl { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
     .setup-box { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; display: none; }
     .setup-box.show { display: block; }
     pre.rules-code { background: #090d16; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; overflow-x: auto; color: #93c5fd; margin: 10px 0 0; }
-    a { color: var(--cyan); }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .topbar { padding: 10px 14px; }
+      .container { padding: 14px 10px 40px; }
+      .brand-info h1 { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <span>Auto Tool — License Admin</span>
-      <span class="badge-ver">Firebase: fb-resend-otp</span>
+    <div class="brand-wrap">
+      <img src="developer_avatar_small.png" alt="FAST OTP" class="brand-avatar" onerror="this.style.display='none'" />
+      <div class="brand-info">
+        <h1>FAST OTP — License & Telemetry Admin</h1>
+        <div class="brand-sub">
+          <span>Community: <a href="https://t.me/superotpgroup07" target="_blank" style="color:var(--cyan);text-decoration:none;">@superotpgroup07</a></span>
+          <span>•</span>
+          <span class="badge-ver">Firebase: fb-resend-otp</span>
+        </div>
+      </div>
     </div>
 
     <div class="conn-bar">
-      <input id="adminPwd" type="password" placeholder="Panel Password (admin123456)" style="width: 185px;" />
+      <button id="pwaInstallBtn" class="btn btn-sm btn-info" style="display:none;" type="button">📲 Install App</button>
+      <input id="adminPwd" type="password" placeholder="Admin Password" style="width: 150px;" />
       <button id="connectBtn" class="btn btn-primary" type="button">Unlock &amp; Sync</button>
-      <button id="toggleAuthBtn" class="btn btn-ghost" type="button" title="Optional Firebase Email/Password for Locked Rules">Firebase Auth</button>
+      <button id="lockBtn" class="btn btn-sm btn-ghost" type="button" style="display:none;" title="Lock Control Center">🔒 Lock</button>
       <label class="checkbox-lbl" title="Auto-refresh every 20s">
         <input id="autoRefresh" type="checkbox" checked />
         Auto (20s)
@@ -227,73 +357,57 @@
     </div>
   </header>
 
-  <main class="container">
-    <!-- Firebase Setup / Permission Help Box -->
+  <!-- 🔒 ADMIN SECURITY GATE MODAL -->
+  <div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(7, 11, 20, 0.93); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); z-index:9999; align-items:center; justify-content:center; padding:18px;">
+    <div class="card" style="width:100%; max-width:420px; border:1px solid rgba(0, 240, 255, 0.45); box-shadow:0 0 50px rgba(0, 240, 255, 0.18); text-align:center; padding:32px 26px;">
+      <div style="width:64px; height:64px; border-radius:50%; background:rgba(0, 240, 255, 0.12); border:2px solid var(--cyan); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:28px;">
+        🛡️
+      </div>
+      <h2 style="justify-content:center; font-size:18px; margin:0 0 6px; font-weight:800; color:#FFFFFF;">
+        FAST OTP — Admin Gate
+      </h2>
+      <p class="muted-small" style="margin:0 0 20px; color:#94A3B8;">
+        Protected Control Center. Enter Admin Password to access.
+      </p>
+
+      <form id="modalLoginForm">
+        <div style="margin-bottom:14px; text-align:left;">
+          <input id="modalPwdInput" type="password" placeholder="Enter Admin Password..." style="height:44px; font-size:15px; text-align:center; letter-spacing:0.18em;" autofocus />
+        </div>
+        <div id="modalLoginError" style="display:none; color:#F87171; font-size:12px; margin-bottom:12px; font-weight:600;">
+          ⚠️ Incorrect Admin Password. Access Denied.
+        </div>
+        <button id="modalLoginBtn" type="submit" class="btn btn-primary" style="width:100%; height:42px; font-size:14px; font-weight:700;">
+          🔓 Unlock Control Center
+        </button>
+      </form>
+
+      <div class="muted-small" style="margin-top:20px; color:#64748B;">
+        FAST OTP Control Center • Super OTP Group
+      </div>
+    </div>
+  </div>
+
+  <main class="container" id="mainContainer">
+    <!-- Firebase Status Helper Box -->
     <section id="setupBox" class="setup-box">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
         <div>
-          <strong id="setupTitle" style="color:#fcd34d;">Firebase Firestore Setup / Rules Needed</strong>
+          <strong id="setupTitle" style="color:#fcd34d;">Firebase Firestore Setup / Permission Notice</strong>
           <div id="setupReason" class="muted-small" style="margin-top:4px; color:#fde68a;"></div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="copyQuickRulesBtn" class="btn btn-sm btn-info" type="button">Copy Working Rules</button>
           <button id="retryConnBtn" class="btn btn-sm btn-primary" type="button">Retry Connection</button>
         </div>
       </div>
       <ol id="setupSteps" style="margin:10px 0 6px; padding-left:20px; font-size:13px; color:#e2e8f0;">
-        <li>Open <a href="https://console.firebase.google.com/project/fb-resend-otp/firestore/rules" target="_blank" rel="noopener">Firebase Console &rarr; Firestore Database &rarr; Rules</a>.</li>
-        <li>Click <strong>Copy Working Rules</strong> above, replace the rules text inside Firebase Console, and click <strong>Publish</strong>.</li>
-        <li>Come back and click <strong>Retry Connection</strong>. Done!</li>
+        <li>Open <a href="https://console.firebase.google.com/project/fb-resend-otp/firestore" target="_blank" rel="noopener">Firebase Console &rarr; Firestore (fb-resend-otp)</a>.</li>
+        <li>Ensure Firestore Database is created and Rules permit read/write.</li>
+        <li>Click <strong>Retry Connection</strong>.</li>
       </ol>
-      <pre id="quickRulesPreview" class="rules-code">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /licenses/{licenseId} {
-      allow read, write: if request.time &lt; timestamp.date(2028, 12, 31);
-    }
-  }
-}</pre>
     </section>
 
-    <!-- Optional Firebase Admin Auth & Rules Panel -->
-    <section id="authDrawer" class="card" style="display:none; margin-bottom:18px;">
-      <h2>Firebase Admin Sign-In &amp; Anti-Crack Rules (Optional)</h2>
-      <p class="muted-small" style="margin-top:0;">
-        Keep <strong>Test Mode</strong> for fastest setup, OR lock Firestore with the rules below and sign in with an Admin Email/Password created in Firebase Authentication. (Even in Test Mode, every key is HMAC-signed by <code>index.html</code> so nobody can forge a license!)
-      </p>
-      <div class="form-grid" style="margin-bottom:10px;">
-        <div class="field">
-          <label>Firebase Admin Email</label>
-          <input id="fbEmail" type="email" placeholder="admin@yourdomain.com" />
-        </div>
-        <div class="field">
-          <label>Firebase Admin Password</label>
-          <input id="fbPassword" type="password" placeholder="Admin account password" />
-        </div>
-        <div>
-          <button id="fbSignInBtn" class="btn btn-info" type="button" style="width:100%;">Sign In to Firebase</button>
-        </div>
-        <div>
-          <button id="copyRulesBtn" class="btn btn-ghost" type="button" style="width:100%;">Copy Locked Rules</button>
-        </div>
-      </div>
-      <div id="fbAuthStatus" class="muted-small"></div>
-      <pre id="rulesCode" class="rules-code">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /licenses/{licenseId} {
-      allow get: if true;
-      allow list, create, delete: if request.auth != null;
-      allow update: if request.auth != null
-        || (resource.data.status == "active"
-            &amp;&amp; request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(["bound_hwid", "last_seen", "total_checks"])
-            &amp;&amp; (resource.data.bound_hwid == "" || resource.data.bound_hwid == request.resource.data.bound_hwid));
-    }
-  }
-}</pre>
-    </section>
-
+    <!-- Top Telemetry Stats Cards -->
     <section class="grid-stats">
       <div class="card">
         <div class="stat-label">Total Members / Keys</div>
@@ -304,19 +418,50 @@ service cloud.firestore {
         <div id="statActive" class="stat-val" style="color: var(--green);">0</div>
       </div>
       <div class="card">
+        <div class="stat-label"><span class="pulse-dot"></span> Live Online Members</div>
+        <div id="statOnline" class="stat-val" style="color: var(--cyan);">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">🔥 Total OTP Resends (All)</div>
+        <div id="statResends" class="stat-val" style="color: #FBBF24;">0</div>
+      </div>
+      <div class="card">
         <div class="stat-label">Suspended / Expired</div>
         <div id="statSuspended" class="stat-val" style="color: var(--red);">0</div>
       </div>
-      <div class="card">
-        <div class="stat-label">Total Logins / Checks</div>
-        <div id="statChecks" class="stat-val" style="color: var(--cyan);">0</div>
+    </section>
+
+    <!-- 🛑 GLOBAL MASTER KILL SWITCH / EMERGENCY MAINTENANCE CONTROLLER -->
+    <section id="masterControlCard" class="card" style="margin-bottom: 22px; border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(14, 22, 38, 0.95));">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div id="masterStatusBadge" style="width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(16, 185, 129, 0.2); border:1px solid #10B981; color:#10B981;">
+            ⚡
+          </div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <h2 style="margin:0; font-size:16px;">MASTER SYSTEM CONTROL &amp; GLOBAL KILL-SWITCH</h2>
+              <span id="masterStatusText" class="badge-ver" style="background:rgba(16, 185, 129, 0.2); color:#10B981; border-color:#10B981;">🟢 ALL TOOLS ACTIVE (ONLINE)</span>
+            </div>
+            <p id="masterDesc" class="muted-small" style="margin:4px 0 0; color:#cbd5e1;">
+              Admin can pause/shut down all members' tools with 1 click. If set to OFF, no tool will run anywhere on any PC.
+            </p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <input id="masterMaintMsg" type="text" placeholder="Custom message for members..." style="width:280px; font-size:12px;" value="Server Maintenance in progress. Contact Telegram: https://t.me/superotpgroup07" />
+          <button id="toggleMasterBtn" class="btn btn-danger" type="button" style="height:38px; font-weight:700;">
+            🛑 PAUSE / KILL ALL TOOLS
+          </button>
+        </div>
       </div>
     </section>
 
-    <section class="card" style="margin-bottom: 20px;">
-      <h2>Make License Key from Member HWID</h2>
-      <p class="muted-small" style="margin:-6px 0 12px;">
-        Group member runs <code>auto tool.exe</code>, copies their <strong>HWID</strong> (<code>AGY-XXXX-...</code>), and sends it to you. Paste it below to generate a strictly HWID-locked license key.
+    <!-- License Generator Section -->
+    <section class="card" style="margin-bottom: 22px;">
+      <h2>⚡ Make License Key from Member HWID</h2>
+      <p class="muted-small" style="margin:-4px 0 14px;">
+        Member runs <code>auto tool.exe</code>, copies their <strong>HWID</strong> (<code>AGY-XXXX-...</code>), and sends it to you on Telegram. Enter it below to generate a tamper-proof HWID-locked license.
       </p>
       <form id="createForm" class="form-grid">
         <div class="field">
@@ -330,7 +475,7 @@ service cloud.firestore {
         <div class="field">
           <label>Validity</label>
           <select id="durationPreset">
-            <option value="0">Lifetime (Permanent)</option>
+            <option value="0">Lifetime (Permanent Access)</option>
             <option value="7">7 Days</option>
             <option value="30" selected>30 Days (1 Month)</option>
             <option value="90">90 Days (3 Months)</option>
@@ -343,11 +488,11 @@ service cloud.firestore {
           <input id="customDays" type="number" min="1" value="15" />
         </div>
         <div class="field">
-          <label>Note (Optional)</label>
-          <input id="licNote" type="text" placeholder="Payment / Telegram / PC note" />
+          <label>Note / Payment Note (Optional)</label>
+          <input id="licNote" type="text" placeholder="bKash / Nagad Trx / Telegram / PC" />
         </div>
         <div>
-          <button id="createBtn" type="submit" class="btn btn-primary" style="width: 100%;">Generate License Key</button>
+          <button id="createBtn" type="submit" class="btn btn-primary" style="width: 100%; height: 38px;">Generate License Key</button>
         </div>
       </form>
 
@@ -355,18 +500,20 @@ service cloud.firestore {
         <span id="bannerMsg"></span>
         <div style="display:flex; gap:8px;">
           <button id="bannerCopyBtn" class="btn btn-sm btn-ghost" style="display:none;" type="button">Copy Key</button>
-          <button id="bannerCopyMsgBtn" class="btn btn-sm btn-info" style="display:none;" type="button">Copy Full Info</button>
+          <button id="bannerCopyMsgBtn" class="btn btn-sm btn-info" style="display:none;" type="button">Copy Full Member SMS</button>
         </div>
       </div>
     </section>
 
+    <!-- Licenses & Telemetry Table -->
     <section class="card">
       <div class="toolbar">
-        <h2 style="margin: 0;">Group Member Licenses</h2>
+        <h2 style="margin: 0;">👥 Member Licenses &amp; Live Telemetry</h2>
         <div class="toolbar-right">
-          <input id="searchBox" type="text" placeholder="Search member, key, HWID..." style="width: 220px;" />
-          <select id="statusFilter">
+          <input id="searchBox" type="text" placeholder="Search name, key, HWID, IP..." style="width: 230px;" />
+          <select id="statusFilter" style="width: 160px;">
             <option value="all">All Status</option>
+            <option value="online">🟢 Online Now (Live)</option>
             <option value="active">Active Only</option>
             <option value="suspended">Suspended Only</option>
             <option value="expired">Expired Only</option>
@@ -380,19 +527,20 @@ service cloud.firestore {
           <thead>
             <tr>
               <th>Member</th>
+              <th>Live Status &amp; Uptime</th>
+              <th>Public IP</th>
+              <th>Resends Sent</th>
               <th>License Key</th>
               <th>Locked HWID</th>
-              <th>Status</th>
-              <th>Expires</th>
-              <th>Last Active</th>
-              <th>Checks</th>
+              <th>Validity / Expiry</th>
+              <th>Last Active / Login</th>
               <th style="text-align: right;">Actions</th>
             </tr>
           </thead>
           <tbody id="licTableBody">
             <tr>
-              <td colspan="8" class="muted-small" style="text-align: center; padding: 28px;">
-                Unlock with Panel Password above to connect to Firebase.
+              <td colspan="9" class="muted-small" style="text-align: center; padding: 32px;">
+                Unlock with Panel Password above to connect to Firebase (fb-resend-otp).
               </td>
             </tr>
           </tbody>
@@ -403,12 +551,48 @@ service cloud.firestore {
 
   <script>
     // ── Firebase Config (fb-resend-otp) & Admin Constants ────────────────────
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSRWUOkhV3rt-GmXM7Nm3Tkghn8Qbg1yA",
+      authDomain: "fb-resend-otp.firebaseapp.com",
+      projectId: "fb-resend-otp",
+      storageBucket: "fb-resend-otp.firebasestorage.app",
+      messagingSenderId: "588215403017",
+      appId: "1:588215403017:web:59f0686513e4a0d871aed8"
+    };
+
     const FIREBASE_PROJECT_ID = "fb-resend-otp";
     const FIREBASE_API_KEY = "AIzaSyBSRWUOkhV3rt-GmXM7Nm3Tkghn8Qbg1yA";
     const PANEL_ADMIN_PASS = "admin123456";
     const SIGN_SECRET = "AT_FB_OTP_2026_!9X#K7mQ_SECURE_SIGN_V2";
 
-    // Pure-JS SHA-256 + HMAC-SHA256 (works everywhere including file:// in Chrome/Edge)
+    // PWA Service Worker Registration
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+    // PWA Install Prompt Capture
+    let deferredInstallPrompt = null;
+    const pwaInstallBtn = document.getElementById("pwaInstallBtn");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (pwaInstallBtn) {
+        pwaInstallBtn.style.display = "inline-flex";
+        pwaInstallBtn.onclick = async () => {
+          if (!deferredInstallPrompt) return;
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === "accepted") {
+            pwaInstallBtn.style.display = "none";
+          }
+          deferredInstallPrompt = null;
+        };
+      }
+    });
+
+    // Pure-JS SHA-256 + HMAC-SHA256 Implementation (Self-Contained)
     const sha256Bytes = (function () {
       const K = new Uint32Array([
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -496,26 +680,17 @@ service cloud.firestore {
     const els = {
       adminPwd: document.getElementById("adminPwd"),
       connectBtn: document.getElementById("connectBtn"),
-      toggleAuthBtn: document.getElementById("toggleAuthBtn"),
       autoRefresh: document.getElementById("autoRefresh"),
       connStatus: document.getElementById("connStatus"),
       connText: document.getElementById("connText"),
       setupBox: document.getElementById("setupBox"),
       setupReason: document.getElementById("setupReason"),
       retryConnBtn: document.getElementById("retryConnBtn"),
-      authDrawer: document.getElementById("authDrawer"),
-      fbEmail: document.getElementById("fbEmail"),
-      fbPassword: document.getElementById("fbPassword"),
-      fbSignInBtn: document.getElementById("fbSignInBtn"),
-      fbAuthStatus: document.getElementById("fbAuthStatus"),
-      copyRulesBtn: document.getElementById("copyRulesBtn"),
-      copyQuickRulesBtn: document.getElementById("copyQuickRulesBtn"),
-      quickRulesPreview: document.getElementById("quickRulesPreview"),
-      rulesCode: document.getElementById("rulesCode"),
       statTotal: document.getElementById("statTotal"),
       statActive: document.getElementById("statActive"),
+      statOnline: document.getElementById("statOnline"),
+      statResends: document.getElementById("statResends"),
       statSuspended: document.getElementById("statSuspended"),
-      statChecks: document.getElementById("statChecks"),
       createForm: document.getElementById("createForm"),
       createBtn: document.getElementById("createBtn"),
       clientName: document.getElementById("clientName"),
@@ -532,6 +707,18 @@ service cloud.firestore {
       statusFilter: document.getElementById("statusFilter"),
       refreshBtn: document.getElementById("refreshBtn"),
       licTableBody: document.getElementById("licTableBody"),
+      masterControlCard: document.getElementById("masterControlCard"),
+      masterStatusBadge: document.getElementById("masterStatusBadge"),
+      masterStatusText: document.getElementById("masterStatusText"),
+      masterDesc: document.getElementById("masterDesc"),
+      masterMaintMsg: document.getElementById("masterMaintMsg"),
+      toggleMasterBtn: document.getElementById("toggleMasterBtn"),
+      lockBtn: document.getElementById("lockBtn"),
+      loginModal: document.getElementById("loginModal"),
+      modalLoginForm: document.getElementById("modalLoginForm"),
+      modalPwdInput: document.getElementById("modalPwdInput"),
+      modalLoginError: document.getElementById("modalLoginError"),
+      mainContainer: document.getElementById("mainContainer"),
     };
 
     const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/licenses`;
@@ -539,10 +726,8 @@ service cloud.firestore {
     let lastCreatedKey = "";
     let lastCreatedFull = "";
     let timerId = null;
-    let fbIdToken = sessionStorage.getItem("at_fb_idtoken") || "";
 
-    els.adminPwd.value = sessionStorage.getItem("at_admin_pwd") || PANEL_ADMIN_PASS;
-    els.fbEmail.value = localStorage.getItem("at_fb_email") || "";
+    els.adminPwd.value = sessionStorage.getItem("at_admin_pwd") || "";
 
     function escapeHtml(str) {
       return String(str ?? "")
@@ -554,7 +739,46 @@ service cloud.firestore {
     }
 
     function isPanelUnlocked() {
-      return els.adminPwd.value === PANEL_ADMIN_PASS;
+      const p = (els.adminPwd.value || sessionStorage.getItem("at_admin_pwd") || "").trim();
+      return p === PANEL_ADMIN_PASS;
+    }
+
+    function checkGateModal() {
+      const unlocked = isPanelUnlocked();
+      if (els.loginModal) {
+        els.loginModal.style.display = unlocked ? "none" : "flex";
+      }
+      if (els.lockBtn) {
+        els.lockBtn.style.display = unlocked ? "inline-flex" : "none";
+      }
+      if (els.mainContainer) {
+        els.mainContainer.style.filter = unlocked ? "none" : "blur(8px)";
+        els.mainContainer.style.pointerEvents = unlocked ? "auto" : "none";
+      }
+    }
+
+    function handleModalLogin() {
+      const val = (els.modalPwdInput.value || "").trim();
+      if (val === PANEL_ADMIN_PASS) {
+        sessionStorage.setItem("at_admin_pwd", val);
+        els.adminPwd.value = val;
+        els.modalLoginError.style.display = "none";
+        checkGateModal();
+        loadLicenses(false);
+      } else {
+        els.modalLoginError.style.display = "block";
+        els.modalPwdInput.value = "";
+        els.modalPwdInput.focus();
+      }
+    }
+
+    function lockPanel() {
+      sessionStorage.removeItem("at_admin_pwd");
+      els.adminPwd.value = "";
+      if (els.modalPwdInput) els.modalPwdInput.value = "";
+      if (els.modalLoginError) els.modalLoginError.style.display = "none";
+      setConnState("err", "Locked");
+      checkGateModal();
     }
 
     function setConnState(state, text) {
@@ -598,12 +822,46 @@ service cloud.firestore {
       return Date.now() > ms;
     }
 
+    function getLiveStatus(lastSeenStr) {
+      if (!lastSeenStr || lastSeenStr === "Never") {
+        return { isOnline: false, text: "Never Connected", badgeClass: "status-offline" };
+      }
+      const iso = lastSeenStr.replace(" UTC", "Z").replace(" ", "T");
+      const ms = Date.parse(iso.endsWith("Z") ? iso : iso + "Z");
+      if (Number.isNaN(ms)) {
+        return { isOnline: false, text: "Offline", badgeClass: "status-offline" };
+      }
+      const diffSec = Math.floor((Date.now() - ms) / 1000);
+      if (diffSec <= 180) { // Heartbeat is every 45s, grace 180s
+        return { isOnline: true, text: "Online Now", badgeClass: "status-online", diffSec };
+      }
+      if (diffSec < 3600) {
+        const mins = Math.floor(diffSec / 60);
+        return { isOnline: false, text: `${mins}m ago`, badgeClass: "status-recent", diffSec };
+      }
+      if (diffSec < 86400) {
+        const hours = Math.floor(diffSec / 3600);
+        return { isOnline: false, text: `${hours}h ago`, badgeClass: "status-offline", diffSec };
+      }
+      const days = Math.floor(diffSec / 86400);
+      return { isOnline: false, text: `${days}d ago`, badgeClass: "status-offline", diffSec };
+    }
+
     function parseFsDoc(doc) {
       const f = doc.fields || {};
       const str = (k, d = "") => (f[k] && f[k].stringValue !== undefined ? String(f[k].stringValue) : d);
-      const num = (k, d = 0) => (f[k] && f[k].integerValue !== undefined ? parseInt(f[k].integerValue, 10) : d);
+      const num = (k, d = 0) => {
+        if (!f[k]) return d;
+        if (f[k].integerValue !== undefined) return parseInt(f[k].integerValue, 10);
+        if (f[k].doubleValue !== undefined) return parseInt(f[k].doubleValue, 10);
+        return d;
+      };
+
       const id = (doc.name || "").split("/").pop();
       const expiresAt = str("expires_at", "Lifetime");
+      const lastSeen = str("last_seen", "Never");
+      const live = getLiveStatus(lastSeen);
+
       return {
         id,
         license_key: str("license_key", id),
@@ -612,11 +870,19 @@ service cloud.firestore {
         status: str("status", "active"),
         created_at: str("created_at", ""),
         expires_at: expiresAt,
-        last_seen: str("last_seen", "Never"),
+        last_seen: lastSeen,
+        last_login: str("last_login", str("created_at", "Never")),
+        last_ip: str("last_ip", "—"),
+        total_resends: num("total_resends", 0),
+        active_uptime: str("active_uptime", "—"),
+        client_version: str("client_version", "v3.0 Ultra"),
         total_checks: num("total_checks", 0),
         note: str("note", ""),
         auth_sig: str("auth_sig", ""),
         is_expired: isExpiredStr(expiresAt),
+        is_online: live.isOnline,
+        live_label: live.text,
+        live_badge: live.badgeClass,
       };
     }
 
@@ -634,9 +900,6 @@ service cloud.firestore {
 
     async function fsFetch(url, options = {}) {
       const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-      if (fbIdToken) {
-        headers["Authorization"] = `Bearer ${fbIdToken}`;
-      }
       const sep = url.includes("?") ? "&" : "?";
       const fullUrl = `${url}${sep}key=${encodeURIComponent(FIREBASE_API_KEY)}`;
       const res = await fetch(fullUrl, { ...options, headers });
@@ -666,37 +929,130 @@ service cloud.firestore {
 
     async function loadLicenses(silent = false) {
       if (!isPanelUnlocked()) {
-        setConnState("err", "Invalid Panel Password");
-        if (!silent) showBanner("error", "Enter valid Admin Panel Password (default: admin123456).");
+        setConnState("err", "Panel Locked");
+        if (!silent) showBanner("error", "Incorrect Admin Password. Access Denied.");
+        checkGateModal();
         return;
       }
-      sessionStorage.setItem("at_admin_pwd", els.adminPwd.value);
+      sessionStorage.setItem("at_admin_pwd", els.adminPwd.value.trim());
+      checkGateModal();
 
       try {
         const data = await fsFetch(`${FS_BASE}?pageSize=300`, { method: "GET" });
         els.setupBox.classList.remove("show");
-        const docs = Array.isArray(data.documents) ? data.documents : [];
+        const rawDocs = Array.isArray(data.documents) ? data.documents : [];
+        const docs = rawDocs.filter((d) => !d.name.endsWith("_GLOBAL_CONFIG_"));
         cachedLicenses = docs.map(parseFsDoc).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+        await loadGlobalConfig();
 
         const total = cachedLicenses.length;
         const active = cachedLicenses.filter((l) => l.status === "active" && !l.is_expired).length;
+        const onlineCount = cachedLicenses.filter((l) => l.is_online).length;
+        const grandResends = cachedLicenses.reduce((acc, l) => acc + (l.total_resends || 0), 0);
         const suspended = total - active;
-        const checks = cachedLicenses.reduce((acc, l) => acc + (l.total_checks || 0), 0);
 
         els.statTotal.textContent = total;
         els.statActive.textContent = active;
+        els.statOnline.textContent = onlineCount;
+        els.statResends.textContent = grandResends.toLocaleString();
         els.statSuspended.textContent = suspended;
-        els.statChecks.textContent = checks;
+
         setConnState("ok", "Firebase Live");
         renderTable();
       } catch (err) {
         setConnState("err", "Firebase Error");
-        const low = (err.message || "").toLowerCase();
-        if (low.includes("has not been used") || low.includes("disabled") || low.includes("permission") || err.status === 403) {
-          els.setupReason.textContent = err.message;
-          els.setupBox.classList.add("show");
-        }
+        els.setupReason.textContent = err.message;
+        els.setupBox.classList.add("show");
         if (!silent) showBanner("error", `Firebase error: ${err.message}`);
+      }
+    }
+
+    function updateMasterSwitchUI(isPaused, msg) {
+      if (!els.masterControlCard) return;
+      els.masterControlCard.dataset.paused = isPaused ? "true" : "false";
+      if (isPaused) {
+        els.masterControlCard.style.borderColor = "rgba(239, 68, 68, 0.8)";
+        els.masterControlCard.style.background = "linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(14, 22, 38, 0.95))";
+        els.masterStatusBadge.style.borderColor = "#EF4444";
+        els.masterStatusBadge.style.color = "#EF4444";
+        els.masterStatusBadge.style.background = "rgba(239, 68, 68, 0.25)";
+        els.masterStatusBadge.textContent = "🛑";
+        els.masterStatusText.textContent = "🔴 ALL TOOLS PAUSED / LOCKED (OFF)";
+        els.masterStatusText.style.background = "rgba(239, 68, 68, 0.25)";
+        els.masterStatusText.style.color = "#FCA5A5";
+        els.masterStatusText.style.borderColor = "#EF4444";
+        els.toggleMasterBtn.className = "btn btn-ok";
+        els.toggleMasterBtn.textContent = "🟢 RESUME / ACTIVATE ALL TOOLS";
+        if (msg) els.masterMaintMsg.value = msg;
+      } else {
+        els.masterControlCard.style.borderColor = "rgba(16, 185, 129, 0.4)";
+        els.masterControlCard.style.background = "linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(14, 22, 38, 0.95))";
+        els.masterStatusBadge.style.borderColor = "#10B981";
+        els.masterStatusBadge.style.color = "#10B981";
+        els.masterStatusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+        els.masterStatusBadge.textContent = "⚡";
+        els.masterStatusText.textContent = "🟢 ALL TOOLS ACTIVE (ONLINE)";
+        els.masterStatusText.style.background = "rgba(16, 185, 129, 0.2)";
+        els.masterStatusText.style.color = "#6EE7B7";
+        els.masterStatusText.style.borderColor = "#10B981";
+        els.toggleMasterBtn.className = "btn btn-danger";
+        els.toggleMasterBtn.textContent = "🛑 PAUSE / KILL ALL TOOLS";
+      }
+    }
+
+    async function loadGlobalConfig() {
+      try {
+        const doc = await fsFetch(`${FS_BASE}/_GLOBAL_CONFIG_`, { method: "GET" });
+        const f = doc.fields || {};
+        const killSwitch = (f.kill_switch && f.kill_switch.stringValue) || "OFF";
+        const status = (f.system_status && f.system_status.stringValue) || "ACTIVE";
+        const msg = (f.maintenance_message && f.maintenance_message.stringValue) || "Server is under maintenance. Contact Telegram: https://t.me/superotpgroup07";
+        updateMasterSwitchUI(killSwitch === "ON" || status !== "ACTIVE", msg);
+      } catch (e) {
+        updateMasterSwitchUI(false, "Server is under maintenance. Contact Telegram: https://t.me/superotpgroup07");
+      }
+    }
+
+    async function toggleMasterKillSwitch() {
+      if (!isPanelUnlocked()) {
+        showBanner("error", "Unlock with panel password first.");
+        return;
+      }
+      const isCurrentlyPaused = els.masterControlCard.dataset.paused === "true";
+      const targetAction = isCurrentlyPaused ? "RESUME / ACTIVATE ALL TOOLS" : "PAUSE / SHUT DOWN ALL TOOLS";
+      const ok = confirm(`⚠️ CRITICAL CONFIRMATION:\n\nAre you sure you want to ${targetAction}?\n\n${isCurrentlyPaused ? "All member client tools will be ALLOWED to connect and run normally." : "All member client tools worldwide will be IMMEDIATELY BLOCKED and terminated in real-time!"}`);
+      if (!ok) return;
+
+      const newStatus = isCurrentlyPaused ? "ACTIVE" : "PAUSED";
+      const newKillSwitch = isCurrentlyPaused ? "OFF" : "ON";
+      const msg = els.masterMaintMsg.value.trim() || "Server is under maintenance. Contact Telegram: https://t.me/superotpgroup07";
+
+      try {
+        els.toggleMasterBtn.disabled = true;
+        els.toggleMasterBtn.textContent = "Updating Cloud...";
+        const body = {
+          fields: {
+            system_status: { stringValue: newStatus },
+            kill_switch: { stringValue: newKillSwitch },
+            maintenance_message: { stringValue: msg },
+            updated_at: { stringValue: fmtUtcDateTime(new Date()) }
+          }
+        };
+        await fsFetch(`${FS_BASE}/_GLOBAL_CONFIG_`, {
+          method: "PATCH",
+          body: JSON.stringify(body)
+        });
+        updateMasterSwitchUI(!isCurrentlyPaused, msg);
+        showBanner(
+          isCurrentlyPaused ? "success" : "error",
+          isCurrentlyPaused 
+            ? "🟢 Master System Status: ONLINE! All members can now use the tool." 
+            : "🛑 Master System Status: LOCKED! All member tools are now blocked worldwide."
+        );
+      } catch (err) {
+        showBanner("error", `Failed to toggle Master Switch: ${err.message}`);
+      } finally {
+        els.toggleMasterBtn.disabled = false;
       }
     }
 
@@ -705,13 +1061,17 @@ service cloud.firestore {
       const filter = els.statusFilter.value;
 
       const filtered = cachedLicenses.filter((l) => {
-        const statusKind = l.is_expired ? "expired" : l.status;
-        if (filter !== "all" && statusKind !== filter) return false;
+        if (filter === "online" && !l.is_online) return false;
+        if (filter === "active" && (l.status !== "active" || l.is_expired)) return false;
+        if (filter === "suspended" && l.status !== "suspended") return false;
+        if (filter === "expired" && !l.is_expired) return false;
+
         if (!q) return true;
         return (
           l.client_name.toLowerCase().includes(q) ||
           l.license_key.toLowerCase().includes(q) ||
           l.bound_hwid.toLowerCase().includes(q) ||
+          l.last_ip.toLowerCase().includes(q) ||
           l.note.toLowerCase().includes(q)
         );
       });
@@ -719,8 +1079,8 @@ service cloud.firestore {
       if (filtered.length === 0) {
         els.licTableBody.innerHTML = `
           <tr>
-            <td colspan="8" class="muted-small" style="text-align: center; padding: 26px;">
-              No licenses found yet. Paste a member's HWID above and click Generate License Key.
+            <td colspan="9" class="muted-small" style="text-align: center; padding: 28px;">
+              No matching member licenses found. Paste a member's HWID above and click Generate License Key.
             </td>
           </tr>`;
         return;
@@ -733,10 +1093,19 @@ service cloud.firestore {
             ? `<span class="tag tag-active">Active</span>`
             : `<span class="tag tag-suspended">Suspended</span>`;
 
+        const livePill = l.is_online
+          ? `<span class="tag ${l.live_badge}"><span class="pulse-dot"></span>${escapeHtml(l.live_label)}</span>`
+          : `<span class="tag ${l.live_badge}">${escapeHtml(l.live_label)}</span>`;
+
         const hwidHtml = l.bound_hwid
           ? `<span class="mono hwid-text">${escapeHtml(l.bound_hwid)}</span>
              <button class="btn btn-sm btn-ghost" onclick="copyByValue('${escapeHtml(l.bound_hwid)}', this)" type="button">Copy</button>`
           : `<span class="tag tag-unbound">Auto on 1st run</span>`;
+
+        const ipHtml = l.last_ip && l.last_ip !== "—"
+          ? `<span class="mono ip-text">${escapeHtml(l.last_ip)}</span>
+             <button class="btn btn-sm btn-ghost" onclick="copyByValue('${escapeHtml(l.last_ip)}', this)" type="button">Copy</button>`
+          : `<span class="muted-small">—</span>`;
 
         const toggleLabel = l.status === "active" ? "Suspend" : "Activate";
         const toggleClass = l.status === "active" ? "btn-warn" : "btn-ok";
@@ -745,18 +1114,32 @@ service cloud.firestore {
         return `
           <tr>
             <td>
-              <div style="font-weight: 600;">${escapeHtml(l.client_name)}</div>
+              <div style="font-weight: 700; color:#FFFFFF;">${escapeHtml(l.client_name)}</div>
               ${l.note ? `<div class="muted-small">${escapeHtml(l.note)}</div>` : ""}
+              <div class="muted-small" style="font-size:10px; color:#64748B;">Version: ${escapeHtml(l.client_version)}</div>
+            </td>
+            <td>
+              <div>${livePill}</div>
+              <div class="uptime-badge" style="margin-top:3px;">⏱️ Uptime: ${escapeHtml(l.active_uptime)}</div>
+              <div style="margin-top:2px;">${statusBadge}</div>
+            </td>
+            <td>${ipHtml}</td>
+            <td>
+              <span class="resend-badge">🔥 ${Number(l.total_resends || 0).toLocaleString()} Resends</span>
+              <div class="muted-small" style="margin-top:2px; font-size:10px;">Checks: ${Number(l.total_checks || 0)}</div>
             </td>
             <td>
               <span class="mono key-text">${safeKey}</span>
               <button class="btn btn-sm btn-ghost" onclick="copyByValue('${safeKey}', this)" type="button">Copy</button>
             </td>
             <td>${hwidHtml}</td>
-            <td>${statusBadge}</td>
-            <td class="muted-small">${escapeHtml(l.expires_at)}</td>
-            <td class="muted-small">${escapeHtml(l.last_seen || "Never")}</td>
-            <td>${Number(l.total_checks || 0)}</td>
+            <td>
+              <div style="font-weight:600;">${escapeHtml(l.expires_at)}</div>
+            </td>
+            <td class="muted-small">
+              <div>Seen: ${escapeHtml(l.last_seen || "Never")}</div>
+              <div style="font-size:10px; color:#64748B;">Login: ${escapeHtml(l.last_login || "—")}</div>
+            </td>
             <td>
               <div class="actions">
                 <button class="btn btn-sm ${toggleClass}" onclick="toggleLicense('${safeKey}')" type="button">${toggleLabel}</button>
@@ -799,11 +1182,10 @@ service cloud.firestore {
       const newHwid = prompt(`Paste Member HWID (AGY-...) to lock key ${key}:`, lic.bound_hwid || "");
       if (newHwid === null) return;
       const clean = newHwid.trim().toUpperCase();
-      if (!clean) return;
-      const sig = signLicense(lic.license_key, clean, lic.expires_at, lic.created_at);
+      const newSig = signLicense(lic.license_key, clean, lic.expires_at, lic.created_at);
       try {
-        await patchLicenseFields(key, { bound_hwid: clean, auth_sig: sig });
-        showBanner("success", `Key ${key} cryptographically locked to HWID ${clean}.`);
+        await patchLicenseFields(key, { bound_hwid: clean, auth_sig: newSig });
+        showBanner("success", `Locked key ${key} to HWID: ${clean || "AUTO"}`);
         await loadLicenses(true);
       } catch (err) {
         showBanner("error", err.message);
@@ -813,14 +1195,16 @@ service cloud.firestore {
     window.extendLicense = async (key) => {
       const lic = cachedLicenses.find((x) => x.license_key === key);
       if (!lic) return;
-      const baseMs = lic.expires_at && lic.expires_at !== "Lifetime" && !lic.is_expired
-        ? Date.parse(lic.expires_at.replace(" UTC", "Z").replace(" ", "T"))
-        : Date.now();
-      const newExp = fmtUtcDateTime(new Date((Number.isNaN(baseMs) ? Date.now() : baseMs) + 30 * 86400 * 1000));
-      const sig = signLicense(lic.license_key, lic.bound_hwid, newExp, lic.created_at);
+      let baseMs = Date.now();
+      if (lic.expires_at && lic.expires_at !== "Lifetime") {
+        const curMs = Date.parse(lic.expires_at.replace(" UTC", "Z").replace(" ", "T"));
+        if (!Number.isNaN(curMs) && curMs > baseMs) baseMs = curMs;
+      }
+      const newExp = fmtUtcDateTime(new Date(baseMs + 30 * 86400 * 1000));
+      const newSig = signLicense(lic.license_key, lic.bound_hwid, newExp, lic.created_at);
       try {
-        await patchLicenseFields(key, { expires_at: newExp, auth_sig: sig, status: "active" });
-        showBanner("success", `Extended ${lic.client_name} (${key}) until ${newExp}.`);
+        await patchLicenseFields(key, { expires_at: newExp, auth_sig: newSig, status: "active" });
+        showBanner("success", `Extended ${lic.client_name} by +30 Days (New Expiry: ${newExp}).`);
         await loadLicenses(true);
       } catch (err) {
         showBanner("error", err.message);
@@ -830,10 +1214,11 @@ service cloud.firestore {
     window.resetHwid = async (key) => {
       const lic = cachedLicenses.find((x) => x.license_key === key);
       if (!lic) return;
-      const sig = signLicense(lic.license_key, "", lic.expires_at, lic.created_at);
+      if (!confirm(`Reset HWID lock for ${lic.client_name}? Key will re-bind automatically to the next machine it runs on.`)) return;
+      const newSig = signLicense(lic.license_key, "", lic.expires_at, lic.created_at);
       try {
-        await patchLicenseFields(key, { bound_hwid: "", auth_sig: sig });
-        showBanner("success", `HWID cleared for ${key}. Next member PC that logs in will bind.`);
+        await patchLicenseFields(key, { bound_hwid: "", auth_sig: newSig });
+        showBanner("success", `Reset HWID for ${lic.client_name}. Ready for next machine.`);
         await loadLicenses(true);
       } catch (err) {
         showBanner("error", err.message);
@@ -841,7 +1226,7 @@ service cloud.firestore {
     };
 
     window.deleteLicense = async (key, name) => {
-      if (!confirm(`Permanently delete license ${key} for "${name}"?`)) return;
+      if (!confirm(`Permanently delete license for ${name} (${key})? This cannot be undone.`)) return;
       try {
         await fsFetch(`${FS_BASE}/${encodeURIComponent(key)}`, { method: "DELETE" });
         showBanner("success", `Deleted license ${key} (${name}).`);
@@ -851,6 +1236,7 @@ service cloud.firestore {
       }
     };
 
+    // ── Create License Submission ───────────────────────────────────────────
     els.durationPreset.addEventListener("change", () => {
       els.customDaysWrap.style.display = els.durationPreset.value === "custom" ? "block" : "none";
     });
@@ -858,108 +1244,116 @@ service cloud.firestore {
     els.createForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isPanelUnlocked()) {
-        showBanner("error", "Unlock panel with Admin Password first.");
+        showBanner("error", "Unlock with panel password first.");
         return;
       }
 
-      const client_name = els.clientName.value.trim();
-      const bound_hwid = els.presetHwid.value.trim().toUpperCase();
-      const duration_days = els.durationPreset.value === "custom"
-        ? parseInt(els.customDays.value || "30", 10)
-        : parseInt(els.durationPreset.value, 10);
-      const note = els.licNote.value.trim().slice(0, 200);
+      const clientName = els.clientName.value.trim();
+      const boundHwid = els.presetHwid.value.trim().toUpperCase();
+      const note = els.licNote.value.trim();
+      const preset = els.durationPreset.value;
 
-      const now = new Date();
-      const created_at = fmtUtcDateTime(now);
-      const expires_at = duration_days > 0
-        ? fmtUtcDateTime(new Date(now.getTime() + duration_days * 86400 * 1000))
-        : "Lifetime";
+      let expiresAt = "Lifetime";
+      if (preset === "custom") {
+        const days = parseInt(els.customDays.value, 10) || 30;
+        expiresAt = fmtUtcDateTime(new Date(Date.now() + days * 86400 * 1000));
+      } else if (preset !== "0") {
+        const days = parseInt(preset, 10);
+        expiresAt = fmtUtcDateTime(new Date(Date.now() + days * 86400 * 1000));
+      }
 
-      const license_key = generateRandomKey();
-      const auth_sig = signLicense(license_key, bound_hwid, expires_at, created_at);
+      const newKey = generateRandomKey();
+      const nowStr = fmtUtcDateTime(new Date());
+      const authSig = signLicense(newKey, boundHwid, expiresAt, nowStr);
+
+      const docBody = {
+        fields: toFsFields({
+          license_key: newKey,
+          client_name: clientName,
+          bound_hwid: boundHwid,
+          status: "active",
+          created_at: nowStr,
+          expires_at: expiresAt,
+          last_seen: "Never",
+          last_login: "Never",
+          last_ip: "—",
+          total_resends: 0,
+          active_uptime: "—",
+          client_version: "v3.0 Ultra",
+          total_checks: 0,
+          note: note,
+          auth_sig: authSig,
+        }),
+      };
 
       els.createBtn.disabled = true;
+      els.createBtn.textContent = "Creating...";
+
       try {
-        const docPayload = {
-          fields: toFsFields({
-            license_key,
-            client_name,
-            bound_hwid,
-            status: "active",
-            created_at,
-            expires_at,
-            last_seen: "Never",
-            total_checks: 0,
-            note,
-            auth_sig,
-          }),
-        };
-        await fsFetch(`${FS_BASE}?documentId=${encodeURIComponent(license_key)}`, {
+        await fsFetch(`${FS_BASE}?documentId=${encodeURIComponent(newKey)}`, {
           method: "POST",
-          body: JSON.stringify(docPayload),
+          body: JSON.stringify(docBody),
         });
 
-        const lockMode = bound_hwid ? `Locked HWID: ${bound_hwid}` : "Auto-bind on 1st PC";
-        const fullMsg = `Auto Tool License\nMember: ${client_name}\nLicense Key: ${license_key}\n${lockMode}\nExpires: ${expires_at}`;
-        showBanner("success", `License created for "${client_name}": ${license_key} (${lockMode})`, license_key, fullMsg);
+        const fullMsg = 
+`⚡ FAST OTP — AUTO RESENDER ACCESS ⚡
+👤 Member: ${clientName}
+🔑 License Key: ${newKey}
+🔒 Bound HWID: ${boundHwid || "Auto-Locks on First Run"}
+⏳ Validity: ${expiresAt}
+🚀 Official Telegram Group: https://t.me/superotpgroup07`;
+
+        showBanner(
+          "success",
+          `✓ License Key Generated for ${clientName}: ${newKey} (${expiresAt})`,
+          newKey,
+          fullMsg
+        );
+
         els.clientName.value = "";
         els.presetHwid.value = "";
         els.licNote.value = "";
         await loadLicenses(true);
       } catch (err) {
-        showBanner("error", err.message);
+        showBanner("error", `Failed to create license: ${err.message}`);
       } finally {
         els.createBtn.disabled = false;
+        els.createBtn.textContent = "Generate License Key";
       }
     });
 
-    els.fbSignInBtn.addEventListener("click", async () => {
-      const email = els.fbEmail.value.trim();
-      const password = els.fbPassword.value;
-      if (!email || !password) {
-        els.fbAuthStatus.textContent = "Enter Firebase Admin Email and Password.";
-        return;
-      }
-      localStorage.setItem("at_fb_email", email);
-      els.fbAuthStatus.textContent = "Signing in...";
-      try {
-        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(FIREBASE_API_KEY)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, returnSecureToken: true }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error((data.error && data.error.message) || "Firebase sign-in failed");
-        fbIdToken = data.idToken;
-        sessionStorage.setItem("at_fb_idtoken", fbIdToken);
-        els.fbAuthStatus.textContent = `Signed in as ${data.email} (Bearer token active).`;
-        await loadLicenses(false);
-      } catch (err) {
-        els.fbAuthStatus.textContent = `Sign-in failed: ${err.message}`;
-      }
-    });
-
-    els.toggleAuthBtn.addEventListener("click", () => {
-      els.authDrawer.style.display = els.authDrawer.style.display === "none" ? "block" : "none";
-    });
-    els.copyRulesBtn.addEventListener("click", () => copyText(els.rulesCode.textContent, els.copyRulesBtn));
-    els.copyQuickRulesBtn.addEventListener("click", () => copyText(els.quickRulesPreview.textContent, els.copyQuickRulesBtn));
-    els.bannerCopyBtn.addEventListener("click", () => lastCreatedKey && copyText(lastCreatedKey, els.bannerCopyBtn));
-    els.bannerCopyMsgBtn.addEventListener("click", () => lastCreatedFull && copyText(lastCreatedFull, els.bannerCopyMsgBtn));
+    els.bannerCopyBtn.addEventListener("click", () => copyText(lastCreatedKey, els.bannerCopyBtn));
+    els.bannerCopyMsgBtn.addEventListener("click", () => copyText(lastCreatedFull, els.bannerCopyMsgBtn));
     els.connectBtn.addEventListener("click", () => loadLicenses(false));
-    els.retryConnBtn.addEventListener("click", () => loadLicenses(false));
     els.refreshBtn.addEventListener("click", () => loadLicenses(false));
+    els.retryConnBtn.addEventListener("click", () => loadLicenses(false));
     els.searchBox.addEventListener("input", renderTable);
     els.statusFilter.addEventListener("change", renderTable);
+    els.toggleMasterBtn.addEventListener("click", toggleMasterKillSwitch);
+    els.lockBtn.addEventListener("click", lockPanel);
+    els.modalLoginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleModalLogin();
+    });
 
-    function syncTimer() {
+    function syncAutoRefresh() {
       if (timerId) clearInterval(timerId);
-      if (els.autoRefresh.checked) timerId = setInterval(() => loadLicenses(true), 20000);
+      if (els.autoRefresh.checked) {
+        timerId = setInterval(() => {
+          if (isPanelUnlocked()) loadLicenses(true);
+        }, 20000);
+      }
     }
-    els.autoRefresh.addEventListener("change", syncTimer);
+    els.autoRefresh.addEventListener("change", syncAutoRefresh);
 
-    loadLicenses(true);
-    syncTimer();
+    // Initial load
+    checkGateModal();
+    if (isPanelUnlocked()) {
+      loadLicenses(true);
+    } else {
+      setTimeout(() => { if (els.modalPwdInput) els.modalPwdInput.focus(); }, 150);
+    }
+    syncAutoRefresh();
   </script>
 </body>
 </html>
