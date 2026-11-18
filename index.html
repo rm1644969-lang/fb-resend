@@ -346,9 +346,9 @@
       <input id="adminPwd" type="password" placeholder="Admin Password" style="width: 150px;" />
       <button id="connectBtn" class="btn btn-primary" type="button">Unlock &amp; Sync</button>
       <button id="lockBtn" class="btn btn-sm btn-ghost" type="button" style="display:none;" title="Lock Control Center">🔒 Lock</button>
-      <label class="checkbox-lbl" title="Auto-refresh every 20s">
-        <input id="autoRefresh" type="checkbox" checked />
-        Auto (20s)
+      <label class="checkbox-lbl" title="Quota-Safe Auto-refresh every 5 minutes (only when tab visible)">
+        <input id="autoRefresh" type="checkbox" />
+        Auto (5m)
       </label>
       <span id="connStatus" class="status-pill">
         <span class="status-dot"></span>
@@ -832,7 +832,7 @@
         return { isOnline: false, text: "Offline", badgeClass: "status-offline" };
       }
       const diffSec = Math.floor((Date.now() - ms) / 1000);
-      if (diffSec <= 180) { // Heartbeat is every 45s, grace 180s
+      if (diffSec <= 2100) { // Quota-safe telemetry sync every 30m, grace 35m
         return { isOnline: true, text: "Online Now", badgeClass: "status-online", diffSec };
       }
       if (diffSec < 3600) {
@@ -941,9 +941,17 @@
         const data = await fsFetch(`${FS_BASE}?pageSize=300`, { method: "GET" });
         els.setupBox.classList.remove("show");
         const rawDocs = Array.isArray(data.documents) ? data.documents : [];
+        const globalDoc = rawDocs.find((d) => d.name && d.name.endsWith("_GLOBAL_CONFIG_"));
+        if (globalDoc && globalDoc.fields) {
+          const f = globalDoc.fields;
+          const killSwitch = (f.kill_switch && f.kill_switch.stringValue) || "OFF";
+          const status = (f.system_status && f.system_status.stringValue) || "ACTIVE";
+          const msg = (f.maintenance_message && f.maintenance_message.stringValue) || "Server is under maintenance. Contact Telegram: https://t.me/superotpgroup07";
+          updateMasterSwitchUI(killSwitch === "ON" || status !== "ACTIVE", msg);
+        }
         const docs = rawDocs.filter((d) => !d.name.endsWith("_GLOBAL_CONFIG_"));
         cachedLicenses = docs.map(parseFsDoc).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-        await loadGlobalConfig();
+        try { localStorage.setItem("at_cached_licenses_v2", JSON.stringify(cachedLicenses)); } catch (_) {}
 
         const total = cachedLicenses.length;
         const active = cachedLicenses.filter((l) => l.status === "active" && !l.is_expired).length;
@@ -957,12 +965,30 @@
         els.statResends.textContent = grandResends.toLocaleString();
         els.statSuspended.textContent = suspended;
 
-        setConnState("ok", "Firebase Live");
+        setConnState("ok", "Firebase Live (Quota-Safe)");
         renderTable();
       } catch (err) {
         setConnState("err", "Firebase Error");
         els.setupReason.textContent = err.message;
         els.setupBox.classList.add("show");
+        // Show last cached licenses instead of wiping dashboard to 0 on 429 quota spikes
+        if (!cachedLicenses.length) {
+          try {
+            const saved = JSON.parse(localStorage.getItem("at_cached_licenses_v2") || "[]");
+            if (Array.isArray(saved) && saved.length) {
+              cachedLicenses = saved;
+              const total = cachedLicenses.length;
+              const active = cachedLicenses.filter((l) => l.status === "active" && !l.is_expired).length;
+              const grandResends = cachedLicenses.reduce((acc, l) => acc + (l.total_resends || 0), 0);
+              els.statTotal.textContent = total;
+              els.statActive.textContent = active;
+              els.statOnline.textContent = 0;
+              els.statResends.textContent = grandResends.toLocaleString();
+              els.statSuspended.textContent = total - active;
+              renderTable();
+            }
+          } catch (_) {}
+        }
         if (!silent) showBanner("error", `Firebase error: ${err.message}`);
       }
     }
@@ -1340,8 +1366,8 @@
       if (timerId) clearInterval(timerId);
       if (els.autoRefresh.checked) {
         timerId = setInterval(() => {
-          if (isPanelUnlocked()) loadLicenses(true);
-        }, 20000);
+          if (isPanelUnlocked() && document.visibilityState === "visible") loadLicenses(true);
+        }, 300000);
       }
     }
     els.autoRefresh.addEventListener("change", syncAutoRefresh);
