@@ -1,0 +1,25 @@
+{
+  "name": "FAST OTP — License & Telemetry Admin",
+  "short_name": "FAST OTP Admin",
+  "description": "Live Firebase HWID License Control, Telemetry & Activity Monitor for FAST OTP Auto Tool.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070B14",
+  "theme_color": "#0B1120",
+  "icons": [
+    {
+      "src": "developer_avatar_small.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "developer_avatar.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
